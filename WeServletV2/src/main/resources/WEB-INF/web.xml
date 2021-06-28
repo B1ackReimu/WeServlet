@@ -3,10 +3,10 @@
     <display-name>WeServlet</display-name>
     <servlet>
         <servlet-name>WeServlet</servlet-name>
-        <servlet-class>weservletv1.v1.WeDispatcherServlet</servlet-class>
+        <servlet-class>weservletv2.v2.WeDispatcherServlet</servlet-class>
         <init-param>
             <param-name>contextConfigLocation</param-name>
-            <param-value>application.properties</param-value>
+            <param-value>classpath:application.properties</param-value>
         </init-param>
         <load-on-startup>1</load-on-startup>
     </servlet>

@@ -1,9 +1,6 @@
 package weservletv1.v1;
 
-import weservletv1.annotation.WeAutowired;
-import weservletv1.annotation.WeController;
-import weservletv1.annotation.WeRequestMapping;
-import weservletv1.annotation.WeService;
+import weservletv1.annotation.*;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.http.HttpServlet;
@@ -12,12 +9,13 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.*;
 
-public class WeServlet extends HttpServlet {
+public class WeDispatcherServlet extends HttpServlet {
 
     private Map<String, Object> ioc = new HashMap<>();
 
@@ -47,17 +45,47 @@ public class WeServlet extends HttpServlet {
         String url = req.getRequestURI();
         String contextPath = req.getContextPath();
         url = url.replaceAll(contextPath, "").replaceAll("/+", "/");
-        if (!this.handlerMapping.containsKey(url)){
+        if (!this.handlerMapping.containsKey(url)) {
             resp.getWriter().write("404 Not Found");
             return;
         }
 
         Method method = this.handlerMapping.get(url);
 
+        //拿到method的形参列表
+        Class<?>[] parameterTypes = method.getParameterTypes();
+
+        //设置实参列表
+        Object[] paramValues = new Object[parameterTypes.length];
+
         Map<String, String[]> params = req.getParameterMap();
 
+        for (int i = 0; i < parameterTypes.length; i++) {
+            Class<?> parameterType = parameterTypes[i];
+            if (parameterType == HttpServletRequest.class) {
+                paramValues[i] = req;
+            } else if (parameterType == HttpServletResponse.class) {
+                paramValues[i] = resp;
+            } else if (parameterType == String.class) {
+                Annotation[][] annotations = method.getParameterAnnotations();
+                for (Annotation annotation : annotations[i]) {
+                    if (annotation instanceof WeRequestParam) {
+                        String paramName = ((WeRequestParam) annotation).value();
+                        String value = Arrays.toString(params.get(paramName))
+                                .replaceAll("[\\[\\]]","")
+                                .replaceAll("\\s","");
+                        paramValues[i] = value;
+                    }
+                }
+            }else {
+                paramValues[i] = null;
+            }
+        }
+
+
+
         String beanName = toLowerFirstCase(method.getDeclaringClass().getSimpleName());
-        method.invoke(ioc.get(beanName), resp,params.get("name")[0]);
+        method.invoke(ioc.get(beanName), paramValues);
     }
 
     @Override

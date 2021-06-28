@@ -1,10 +1,9 @@
-package weservletv1.controller;
+package weservletv2.controller;
 
 import weservletv1.annotation.WeController;
 import weservletv1.annotation.WeRequestMapping;
 import weservletv1.annotation.WeRequestParam;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
