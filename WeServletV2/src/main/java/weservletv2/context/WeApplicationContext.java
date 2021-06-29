@@ -1,5 +1,6 @@
 package weservletv2.context;
 
+import weservletv2.beans.WeBeanWrapper;
 import weservletv2.beans.config.WeBeanDefinition;
 import weservletv2.beans.support.WeBeanDefinitionReader;
 
@@ -11,6 +12,8 @@ public class WeApplicationContext {
     private String[] configLocations;
     private WeBeanDefinitionReader reader;
     private Map<String,WeBeanDefinition> beanDefinitionMap = new HashMap<>();
+    private Map<String,WeBeanWrapper> factoryBeanInstanceCache = new HashMap<>();
+    private Map<String,Object> factoryBeanObjectCache = new HashMap<>();
 
     public WeApplicationContext(String... configLocations) {
         this.configLocations = configLocations;
@@ -47,8 +50,38 @@ public class WeApplicationContext {
         //1、拿到beanName对应的配置信息，即BeanDefinition对象，才能根据配置创建对象
         WeBeanDefinition beanDefinition = this.beanDefinitionMap.get(beanName);
 
-        //2、拿到beanDefinition配置信息以后
-        return null;
+        //2、拿到beanDefinition配置信息以后，开始实例化对象
+        Object instance = instanceBean(beanName,beanDefinition);
+
+        //3、将实例化以后的对象封装成BeanWrapper
+        WeBeanWrapper beanWrapper = new WeBeanWrapper(instance);
+
+        //4、将BeanWrapper对象缓存到IOC容器中
+        this.factoryBeanInstanceCache.put(beanName,beanWrapper);
+
+        //5、完成依赖注入
+        populateBean(beanName,beanDefinition,beanWrapper);
+        return this.factoryBeanInstanceCache.get(beanName).getWrapperInstance();
+    }
+
+    private void populateBean(String beanName, WeBeanDefinition beanDefinition, WeBeanWrapper beanWrapper) {
+    }
+
+    private Object instanceBean(String beanName, WeBeanDefinition beanDefinition) {
+        String className = beanDefinition.getBeanClassName();
+        Object instance = null;
+        try {
+            Class<?> clazz = Class.forName(className);
+            instance = clazz.newInstance();
+
+            //接入AOP解析入口
+            //切面表达式判断是否符合切面规则
+
+            this.factoryBeanObjectCache.put(beanName,instance);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return instance;
     }
 
     private void doRegistryBeanDefinitions(List<WeBeanDefinition> beanDefinitions) throws Exception {
